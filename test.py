@@ -67,4 +67,3 @@ quanty = st.number_input("Введите количество", 1)
 x = st.selectbox('Выберите валюту:', all_valutes())
 st.write(f"{quanty} {x} {"  =  "} {quanty * get_rate_cbr(x[0:3]):.2f} {"RUB"}")
 
-
