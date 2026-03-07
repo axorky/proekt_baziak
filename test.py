@@ -42,7 +42,6 @@ st.title("Конвертер валют и криптовалют")
 # )
 # st.write('Вы выбрали:', x)
 
-
 def all_valutes():
     url = "http://www.cbr.ru/scripts/XML_daily.asp"
     try:
