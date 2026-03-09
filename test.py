@@ -45,6 +45,14 @@ def rub_to_another_rate(x, y):   # функция перевода валюты 
     rate = get_rate_cbr(y[0:3]) / get_rate_cbr(x[0:3])
     return rate
 
+def rub_to_another_rate_rub(x):   # функция перевода валюты НЕ рубля, к другой валюты НЕ рубля
+    rate = 1 / get_rate_cbr(x[0:3])
+    return rate
+
+def swap_values():  # понадобиться в будущем для изменения значений ввода и вывода
+    st.session_state.x, st.session_state.y = st.session_state.y, st.session_state.x
+
+
 # В streamlit есть несколько способов выбора варианта ответа, multiselect - Для выбора нескольких значений, select_slider - для ползунка выбора,
 # radio - для выбора пунктов, лучше всего для не более чем 6 вариантов ответа
 
@@ -63,25 +71,47 @@ def rub_to_another_rate(x, y):   # функция перевода валюты 
 st.title("Конвертер валют и криптовалют")  # задаем титул - главная фраза на сайте, название программы
 
 move = st.radio(   # выбор действия - Валюта и Криптовалюта, для отделения разных функций
-    "Выберите что вы хотиите перевести",
+    "Выберите что вы хотите перевести?",
    ['Валюта', 'Криптовалюта']
 )
 
+col1, col2, col3 = st.columns([7, 1, 7]) # настраиваем размеры кнопок
+ 
 if move == "Валюта":  # действие ВАЛЮТА
     quanty = st.number_input("Введите количество", 1)  # количество требуемой валюты
 
-    y = st.selectbox(   # выбор валюты для конвертизации
-        'Валюта:',
-        all_valutes(),
-        index = None,
-        placeholder="Тут строка поиска/выбора")
+    if "x" not in st.session_state:
+        st.session_state.x = None
+        st.session_state.y = None
 
-    x = st.selectbox(   # в какую валюту конвертизирует
-        'Вывод в:',
-        all_valutes(),
-        index = None,
-        placeholder="Тут строка поиска/выбора")
+    with col1:
+        y = st.selectbox(   # выбор валюты для конвертизации
+            'Валюта:',
+            options = all_valutes(),
+            index = None,
+            placeholder = "Тут строка поиска/выбора",
+            label_visibility="collapsed",
+            key = 'y'
+            )
+        st.write("")
 
+    with col2:
+        st.button("↔",
+            use_container_width = True,
+            on_click = swap_values,
+            key = "swap_button"
+            )
+
+    with col3:
+        x = st.selectbox(   # в какую валюту конвертизирует
+            'Вывод в:',
+            options = all_valutes(),
+            index = None,
+            placeholder = "Тут строка поиска/выбора",
+            label_visibility="collapsed",
+            key = "x"
+            )
+        
     if x == y:    # проверка if, если валюты равны, то следовательно - значение 1
         try:
             st.write(f"{y} {"  =  "} {1} {f"{x[0:3]}"}")
@@ -91,6 +121,8 @@ if move == "Валюта":  # действие ВАЛЮТА
         try:
             if x[0:3] == "RUB":    # если валюта - рубль - то производиться обычная конвертизация из xml файла сайта цбр
                 st.write(f"{quanty} {y} {"  =  "} {quanty * get_rate_cbr(y[0:3]):.2f} {f"{x[0:3]}"}")
+            elif y[0:3] == "RUB":
+                st.write(f"{quanty} {y} {"  =  "} {quanty * rub_to_another_rate_rub(x):.4f} {f"{x[0:3]}"}")
             else:    # в остальных случаях проводится конвертизация через деление двух НЕ рублёвых валют
                 st.write(f"{quanty} {y} {"  =  "} {(quanty * rub_to_another_rate(x, y)):.4f} {f"{x[0:3]}"}")
         except: 
