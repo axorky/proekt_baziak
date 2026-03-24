@@ -2,6 +2,8 @@
 import streamlit as st      # основная библиотека для работы
 import requests         # Библиотека для запросов данных
 from xml.etree.ElementTree import fromstring    # библиотека для обработки xml файлов
+from datetime import datetime
+
 
 def all_valutes():      # функция для создания списка со всеми валютами, находящихся в доступе на сайте центрального банка России
         url = "http://www.cbr.ru/scripts/XML_daily.asp"    # ссылка для обращение к xml файлу сайта ЦБР
@@ -23,6 +25,18 @@ def all_valutes():      # функция для создания списка с
         except Exception as e:    # в случае ошибки данных, для предотвращениия отказа работы приложения добавлена except
             print(f"Ошибка при получении данных: {e}")
             return None
+
+def get_date():
+    url = "http://www.cbr.ru/scripts/XML_daily.asp" 
+    response = requests.get(url)
+    response.encoding = 'windows-1251'     # Важно для правильного отображения русских букв
+    root = fromstring(response.text)     # Проверка текста для получения данных
+
+    date_header = response.headers.get('Date')
+    if date_header:
+        date_obj = datetime.strptime(date_header, '%a, %d %b %Y %H:%M:%S %Z') # Преобразуем строку заголовка (например, "Tue, 24 Mar 2026 12:34:56 GMT") в datetime
+    formatted_date = date_obj.strftime('%d.%m.%Y') # Форматируем для вывода на сайт (например, "24.03.2026")
+    return formatted_date
 
 def get_rate_cbr(x):    # САМАЯ ГЛАВНАЯ ФУНКЦИЯ для получения отношения валюты к рублю, от неё идет общая работа с действием: "Валюта"
     url = "http://www.cbr.ru/scripts/XML_daily.asp"
@@ -69,6 +83,11 @@ def swap_values():  # понадобиться в будущем для изме
 # st.write('Вы выбрали:', x)
 
 st.title("Конвертер валют и криптовалют")  # задаем титул - главная фраза на сайте, название программы
+
+col4, col5 = st.columns([1, 1]) 
+
+with col4:
+    st.write(f"Последнее обновление курса ЦБР: {get_date()}") ## вывод актуальной даты курса для конвертизации
 
 move = st.radio(   # выбор действия - Валюта и Криптовалюта, для отделения разных функций
     "Выберите что вы хотите перевести?",
@@ -127,23 +146,6 @@ if move == "Валюта":  # действие ВАЛЮТА
                 st.write(f"{quanty} {y} {"  =  "} {(quanty * rub_to_another_rate(x, y)):.4f} {f"{x[0:3]}"}")
         except: 
             st.write("Ожидание ввода...")    # пока не выберется валюта данные не появится, предотвращая ошибку
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 if move == "Криптовалюта":
     st.title("В разработке...")
