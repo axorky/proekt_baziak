@@ -1,7 +1,6 @@
-# импортирую библиотеки для работы
-import streamlit as st      # основная библиотека для работы
-from requests import get        # Библиотека для запросов данных
-from xml.etree.ElementTree import fromstring    # библиотека для обработки xml файлов
+import streamlit as st 
+from requests import get
+from xml.etree.ElementTree import fromstring 
 from datetime import datetime
 from json import load
 from ssl import create_default_context
@@ -9,7 +8,9 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from certifi import where
 
-def get_rate_cbr(x):    # САМАЯ ГЛАВНАЯ ФУНКЦИЯ для получения отношения валюты к рублю, от неё идет общая работа
+st.set_page_config("Koin")
+
+def get_rate_cbr(x):
     url = "http://www.cbr.ru/scripts/XML_daily.asp"
     try:
         response = get(url)
@@ -17,8 +18,8 @@ def get_rate_cbr(x):    # САМАЯ ГЛАВНАЯ ФУНКЦИЯ для пол
         root = fromstring(response.text)
 
         for valute in root.findall('Valute'):
-            if valute.find('CharCode').text == x:    # проверка требуемой валюты для конвертизации
-                value = valute.find('Value').text
+            if valute.find('CharCode').text == x:
+                value = valute.find('VunitRate').text
                 rate = float(value.replace(',', '.'))
                 return rate
     except Exception as e:
@@ -59,7 +60,8 @@ for crypto in crypto_list:
         data = []
 
 
-def all_valutes():      # функция для создания списка со всеми валютами, находящихся в доступе на сайте центрального банка России
+def all_valutes():   
+           # функция для создания списка со всеми валютами, находящихся в доступе на сайте центрального банка России
         url = "http://www.cbr.ru/scripts/XML_daily.asp"    # ссылка для обращение к xml файлу сайта ЦБР
         try:
             response = get(url)
@@ -73,7 +75,8 @@ def all_valutes():      # функция для создания списка с
                 valnames += " - "
                 valnames += valute.find('Name').text
                 valutes.append(valnames)
-            valutes.append("RUB - Россиийский рубль")    # добавляем отдельно, так как в информации не предоставлена валюта российского рубля
+            valutes.append("RUB - Россиийский рубль") 
+               # добавляем отдельно, так как в информации не предоставлена валюта российского рубля
             return valutes    # возвращаем полный список доступных валют
             
         except Exception as e:    # в случае ошибки данных, для предотвращениия отказа работы приложения добавлена except
@@ -85,31 +88,33 @@ all_valutes = all_valutes()
 def get_date():
     url = "http://www.cbr.ru/scripts/XML_daily.asp" 
     response = get(url)
-    response.encoding = 'windows-1251'     # Важно для правильного отображения русских букв
-    root = fromstring(response.text)     # Проверка текста для получения данных
+    response.encoding = 'windows-1251'     # важно для правильного отображения русских букв
+    root = fromstring(response.text)     # проверка текста для получения данных
 
     date_header = response.headers.get('Date')
     if date_header:
-        date_obj = datetime.strptime(date_header, '%a, %d %b %Y %H:%M:%S %Z') # Преобразуем строку заголовка (например, "Tue, 24 Mar 2026 12:34:56 GMT") в datetime
-    formatted_date = date_obj.strftime('%d.%m.%Y') # Форматируем для вывода на сайт (например, "24.03.2026")
+        date_obj = datetime.strptime(date_header, '%a, %d %b %Y %H:%M:%S %Z')
+        # преобразуем строку заголовка (например, "Tue, 24 Mar 2026 12:34:56 GMT") в datetime
+    formatted_date = date_obj.strftime('%d.%m.%Y') # форматируем для вывода на сайт (например, "24.03.2026")
     return formatted_date
+
+def combined_list(names):
+    combined_valutes_list = []
+    rev_combined_valutes_list = []
+    combined_valutes_list.extend(all_valutes)
+    combined_valutes_list.extend(names)
+    rev_combined_valutes_list.extend(names)
+    rev_combined_valutes_list.extend(all_valutes)
+    return combined_valutes_list, rev_combined_valutes_list
+
 
 def rate_to_another_rate(x, y):   # функция перевода валюты НЕ рубля, к другой валюты НЕ рубля
     rate = get_rate_cbr(y[0:3]) / get_rate_cbr(x[0:3])
     return rate
 
-def rub_to_another_rate_rub(x):   # функция перевода валюты НЕ рубля, к другой валюты НЕ рубля
+def rub_to_another_rate_rub(x):   # функция перевода валюты рубля, к другой валюты НЕ рубля
     rate = 1 / get_rate_cbr(x[0:3])
     return rate
-
-def swap_values():  # понадобиться в будущем для изменения значений ввода и вывода
-    st.session_state.x, st.session_state.y = st.session_state.y, st.session_state.x
-
-def fast_crypt_x(pair):
-    for valute in all_valutes:
-        if pair[-3:] in valute:
-            return valute
-
 
 def crypt_price_rub(x):
     for i in info:
@@ -134,15 +139,8 @@ def crypt_to_crypt(x, y):
     price = crypt_price_rub(x) / crypt_price_rub(y)
     return price
 
-def combined_list(names):
-    combined_valutes_list = []
-    rev_combined_valutes_list = []
-    combined_valutes_list.extend(all_valutes)
-    combined_valutes_list.extend(names)
-    rev_combined_valutes_list.extend(names)
-    rev_combined_valutes_list.extend(all_valutes)
-    return combined_valutes_list, rev_combined_valutes_list
-
+def swap_values():  # понадобиться в будущем для изменения значений ввода и вывода
+    st.session_state.x, st.session_state.y = st.session_state.y, st.session_state.x
 
 def fast_valute_y(pair):
     val_name = pair.split(" - ")[0].strip()
@@ -158,12 +156,13 @@ def fast_valute_x(pair):
         if val_name in valute:
             return valute
 
+def set_amount(quant):
+    st.session_state.quanty = quant
+
 def update_pair(pair):
     st.session_state.y = fast_valute_y(pair)
     st.session_state.x = fast_valute_x(pair)
 
-def set_amount(quant):
-    st.session_state.quanty = quant
 
 # В streamlit есть несколько способов выбора варианта ответа, multiselect - Для выбора нескольких значений, select_slider - для ползунка выбора,
 # radio - для выбора пунктов, лучше всего для не более чем 6 вариантов ответа
@@ -180,7 +179,7 @@ def set_amount(quant):
 # )
 # st.write('Вы выбрали:', x)
 
-st.title("Конвертер валют и криптовалют")  # задаем титул - главная фраза на сайте, название программы
+st.title("Koin - Конвертер валют и криптовалют")  # задаем титул - главная фраза на сайте, название программы
 
 col4, col5 = st.columns([1, 1]) 
 
@@ -210,7 +209,6 @@ with col1:
         label_visibility="visible",
         key = 'y'
         )
-    st.write("")
 
 with col2:
     st.markdown("<br>", unsafe_allow_html=True)
@@ -235,7 +233,7 @@ st.divider()
 if x == y:    # проверка if, если валюты равны, то следовательно - значение 1
     try:
         if y != None or x != None:
-            st.info(f"{y} {"  =  "} {1} {f"{x}"}")
+            st.info(f"{quanty} {y} {"  =  "} {quanty * 1} {x}")
         else:
             st.info("Ожидание ввода...")  
     except:
@@ -243,25 +241,25 @@ if x == y:    # проверка if, если валюты равны, то сл
 elif x != y:     # проверка elif, так как иначе выводит ошибку и предотвращает работу программы
     try:
         if x in crypt_names and y in crypt_names:    # в остальных случаях проводится конвертизация через деление двух криптовалют
-            st.info(f"{quanty} {y} {"  =  "} {quanty * crypt_to_crypt(y, x):.4f} {f"{x}"}")
+            st.info(f"{quanty} {y} {"  =  "} {quanty * crypt_to_crypt(y, x):.4f} {x}")
         elif x in crypt_names:
-            st.info(f"{quanty} {y} {"  =  "} {quanty * crypt_price_valute(x, y):.8f} {f"{x}"}")
+            st.info(f"{quanty} {y} {"  =  "} {quanty * crypt_price_valute(x, y):.8f} {x}")
         elif y in crypt_names:    # если валюта - рубль - то производиться обычная конвертизация из xml файла сайта цбр
-            st.info(f"{quanty} {y} {"  =  "} {quanty * valute_price_crypt(x, y):.2f} {f"{x}"}")
+            st.info(f"{quanty} {y} {"  =  "} {quanty * valute_price_crypt(x, y):.2f} {x}")
         else:
             if x == y:    # проверка if, если валюты равны, то следовательно - значение 1
                 try:
-                    st.info(f"{y} {"  =  "} {1} {f"{x[0:3]}"}")
+                    st.info(f"{quanty} {y} {"  =  "} {quanty * 1} {x}")
                 except:
                     st.info("Ожидание ввода...")    # пока не выберется валюта данные не появится, предотвращая ошибку
             elif x != "":     # проверка elif, так как иначе выводит ошибку и предотвращает работу программы
                 try:
                     if x[0:3] == "RUB":    # если валюта - рубль - то производиться обычная конвертизация из xml файла сайта цбр
-                        st.info(f"{quanty} {y} {"  =  "} {quanty * get_rate_cbr(y[0:3]):.2f} {f"{x}"}")
+                        st.info(f"{quanty} {y} {"  =  "} {quanty * get_rate_cbr(y[0:3]):.2f} {x}")
                     elif y[0:3] == "RUB":
-                        st.info(f"{quanty} {y} {"  =  "} {quanty * rub_to_another_rate_rub(x):.4f} {f"{x}"}")
+                        st.info(f"{quanty} {y} {"  =  "} {quanty * rub_to_another_rate_rub(x):.4f} {x}")
                     else:    # в остальных случаях проводится конвертизация через деление двух НЕ рублёвых валют
-                        st.info(f"{quanty} {y} {"  =  "} {(quanty * rate_to_another_rate(x, y)):.4f} {f"{x}"}")
+                        st.info(f"{quanty} {y} {"  =  "} {(quanty * rate_to_another_rate(x, y)):.4f} {x}")
                 except: 
                     st.info("Ожидание ввода...")
 
@@ -300,7 +298,6 @@ with col_right:
     for val in amounts:
         st.button(
         f"{val}", 
-        key=f"btn_{val}", 
         use_container_width=True, 
         on_click=set_amount, 
         args=(val,)
